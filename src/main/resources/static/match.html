@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Match Control</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #111;
+
+            color: white;
+        }
+
+
+        .container {
+
+            width: 95%;
+
+            margin: 30px auto;
+        }
+
+
+        h1 {
+
+            text-align: center;
+
+            font-size: 40px;
+
+            margin-bottom: 30px;
+        }
+
+
+        .buttons {
+
+            text-align: center;
+
+            margin-bottom: 30px;
+        }
+
+
+        button {
+
+            border: none;
+
+            padding: 12px 20px;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            border-radius: 7px;
+
+            cursor: pointer;
+
+            margin: 5px;
+        }
+
+
+        button:hover {
+
+            opacity: 0.85;
+        }
+
+
+        .create-btn {
+
+            background: #00c853;
+
+            color: white;
+        }
+
+
+        .refresh-btn {
+
+            background: #2979ff;
+
+            color: white;
+        }
+
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            background: #181818;
+        }
+
+
+        th {
+
+            background: #222;
+
+            font-size: 17px;
+
+            padding: 15px;
+        }
+
+
+        td {
+
+            padding: 12px;
+
+            text-align: center;
+
+            border: 1px solid #333;
+        }
+
+
+        input {
+
+            width: 90px;
+
+            padding: 9px;
+
+            text-align: center;
+
+            font-size: 15px;
+
+            background: #333;
+
+            color: white;
+
+            border: 1px solid #555;
+
+            border-radius: 5px;
+        }
+
+
+        input:focus {
+
+            outline: none;
+
+            border-color: #00c853;
+        }
+
+
+        .alive {
+
+            color: #00ff88;
+
+            font-weight: bold;
+        }
+
+
+        .dead {
+
+            color: #ff3333;
+
+            font-weight: bold;
+        }
+
+
+        .save-btn {
+
+            background: #ff9800;
+
+            color: white;
+        }
+
+
+        .death-btn {
+
+            background: #e53935;
+
+            color: white;
+        }
+
+
+        .empty {
+
+            text-align: center;
+
+            padding: 30px;
+
+            font-size: 20px;
+        }
+
+
+        .message {
+
+            text-align: center;
+
+            margin-bottom: 20px;
+
+            font-weight: bold;
+
+            min-height: 20px;
+        }
+
+
+        .success {
+
+            color: #00ff88;
+        }
+
+
+        .error {
+
+            color: #ff4444;
+        }
+
+
+        @media (max-width: 900px) {
+
+            .container {
+
+                width: 100%;
+
+                padding: 10px;
+
+                overflow-x: auto;
+            }
+
+            table {
+
+                min-width: 900px;
+            }
+
+            h1 {
+
+                font-size: 30px;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <h1>🎮 MATCH CONTROL</h1>
+
+
+    <div id="message" class="message"></div>
+
+
+    <div class="buttons">
+
+        <button
+            class="create-btn"
+            onclick="createPlayers()">
+
+            Create 64 Players
+
+        </button>
+
+
+        <button
+            class="refresh-btn"
+            onclick="loadPlayers()">
+
+            Refresh Players
+
+        </button>
+
+    </div>
+
+
+    <table>
+
+        <thead>
+
+        <tr>
+
+            <th>Player</th>
+
+            <th>Team</th>
+
+            <th>Status</th>
+
+            <th>Kills</th>
+
+            <th>Headshots</th>
+
+            <th>Damage</th>
+
+            <th>Assists</th>
+
+            <th>Action</th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody id="playerTable">
+
+        <tr>
+
+            <td
+                colspan="8"
+                class="empty">
+
+                No players loaded
+
+            </td>
+
+        </tr>
+
+        </tbody>
+
+    </table>
+
+
+</div>
+
+
+
+<script>
+
+
+const API_URL = "/api/players";
+
+
+// ==========================================
+// MESSAGE
+// ==========================================
+
+function showMessage(message, success = true) {
+
+    const element =
+        document.getElementById("message");
+
+    element.textContent = message;
+
+    element.className =
+        success
+            ? "message success"
+            : "message error";
+
+
+    setTimeout(() => {
+
+        element.textContent = "";
+
+    }, 2500);
+
+}
+
+
+
+// ==========================================
+// CREATE 64 PLAYERS
+// ==========================================
+
+async function createPlayers() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/create-players",
+                {
+                    method: "POST"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Server error: " + response.status
+            );
+        }
+
+
+        const message =
+            await response.text();
+
+
+        showMessage(message, true);
+
+
+        await loadPlayers();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        showMessage(
+            "Error creating players",
+            false
+        );
+    }
+
+}
+
+
+
+// ==========================================
+// LOAD PLAYERS
+// ==========================================
+
+async function loadPlayers() {
+
+    try {
+
+        const response =
+            await fetch(API_URL);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Server error: " + response.status
+            );
+        }
+
+
+        const players =
+            await response.json();
+
+
+        displayPlayers(players);
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        showMessage(
+            "Cannot connect to backend",
+            false
+        );
+    }
+
+}
+
+
+
+// ==========================================
+// DISPLAY PLAYERS
+// ==========================================
+
+function displayPlayers(players) {
+
+    const table =
+        document.getElementById("playerTable");
+
+
+    table.innerHTML = "";
+
+
+    if (players.length === 0) {
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="8"
+                    class="empty">
+
+                    No players found
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+    }
+
+
+    players.forEach((player, index) => {
+
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+
+                ${player.name}
+
+            </td>
+
+
+            <td>
+
+                ${player.team}
+
+            </td>
+
+
+            <td>
+
+                <span
+                    class="${player.alive ? 'alive' : 'dead'}">
+
+                    ${player.alive
+                        ? 'ALIVE'
+                        : 'DEAD'}
+
+                </span>
+
+            </td>
+
+
+            <td>
+
+                <input
+
+                    type="number"
+
+                    id="kills-${index}"
+
+                    value="${player.kills}"
+
+                    min="0"
+
+                >
+
+            </td>
+
+
+            <td>
+
+                <input
+
+                    type="number"
+
+                    id="headshots-${index}"
+
+                    value="${player.headshots}"
+
+                    min="0"
+
+                >
+
+            </td>
+
+
+            <td>
+
+                <input
+
+                    type="number"
+
+                    id="damage-${index}"
+
+                    value="${player.damage}"
+
+                    min="0"
+
+                >
+
+            </td>
+
+
+            <td>
+
+                <input
+
+                    type="number"
+
+                    id="assists-${index}"
+
+                    value="${player.assists}"
+
+                    min="0"
+
+                >
+
+            </td>
+
+
+            <td>
+
+                <button
+
+                    class="save-btn"
+
+                    onclick="savePlayer(
+                        '${player.name}',
+                        ${index}
+                    )">
+
+                    Save
+
+                </button>
+
+
+                <button
+
+                    class="death-btn"
+
+                    onclick="toggleDeath(
+                        '${player.name}'
+                    )">
+
+                    ${player.alive
+                        ? 'Kill'
+                        : 'Revive'}
+
+                </button>
+
+            </td>
+
+        `;
+
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+
+// ==========================================
+// SAVE PLAYER
+// ==========================================
+
+async function savePlayer(name, index) {
+
+    try {
+
+
+        const kills =
+            parseInt(
+                document.getElementById(
+                    `kills-${index}`
+                ).value
+            ) || 0;
+
+
+        const headshots =
+            parseInt(
+                document.getElementById(
+                    `headshots-${index}`
+                ).value
+            ) || 0;
+
+
+        const damage =
+            parseInt(
+                document.getElementById(
+                    `damage-${index}`
+                ).value
+            ) || 0;
+
+
+        const assists =
+            parseInt(
+                document.getElementById(
+                    `assists-${index}`
+                ).value
+            ) || 0;
+
+
+
+        const playerData = {
+
+            name: name,
+
+            kills: kills,
+
+            headshots: headshots,
+
+            damage: damage,
+
+            assists: assists
+
+        };
+
+
+
+        const response =
+            await fetch(
+                API_URL + "/" +
+                encodeURIComponent(name),
+                {
+
+                    method: "PUT",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            playerData
+                        )
+                }
+            );
+
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Server error: " +
+                response.status
+            );
+        }
+
+
+
+        const message =
+            await response.text();
+
+
+        showMessage(message, true);
+
+
+        // Reload the data
+
+        await loadPlayers();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        showMessage(
+            "Unable to save player",
+            false
+        );
+    }
+
+}
+
+
+
+// ==========================================
+// KILL / REVIVE
+// ==========================================
+
+async function toggleDeath(name) {
+
+    try {
+
+
+        const response =
+            await fetch(
+
+                API_URL + "/" +
+                encodeURIComponent(name) +
+                "/toggle",
+
+                {
+
+                    method: "PUT"
+
+                }
+
+            );
+
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Server error: " +
+                response.status
+            );
+        }
+
+
+
+        const message =
+            await response.text();
+
+
+        showMessage(message, true);
+
+
+        // Reload players
+
+        await loadPlayers();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        showMessage(
+            "Unable to change player status",
+            false
+        );
+    }
+
+}
+
+
+
+// ==========================================
+// LOAD WHEN PAGE OPENS
+// ==========================================
+
+window.addEventListener(
+    "load",
+    loadPlayers
+);
+
+
+</script>
+
+
+</body>
+
+</html>

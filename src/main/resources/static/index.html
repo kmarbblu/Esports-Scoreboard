@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Esports Scoreboard</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            background: #111;
+
+            color: white;
+
+            margin: 0;
+
+            padding: 30px;
+        }
+
+        h1 {
+
+            text-align: center;
+
+            margin-bottom: 10px;
+
+            font-size: 40px;
+        }
+
+        .subtitle {
+
+            text-align: center;
+
+            color: #aaa;
+
+            margin-bottom: 25px;
+
+            font-size: 16px;
+        }
+
+        .top-bar {
+
+            display: flex;
+
+            justify-content: center;
+
+            gap: 15px;
+
+            margin-bottom: 25px;
+
+            flex-wrap: wrap;
+        }
+
+        .match-btn {
+
+            background: #2979ff;
+
+            color: white;
+
+            border: none;
+
+            padding: 12px 22px;
+
+            border-radius: 8px;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        .match-btn:hover {
+
+            background: #1565c0;
+        }
+
+        .status {
+
+            text-align: center;
+
+            margin-bottom: 20px;
+
+            color: #00ff88;
+
+            font-weight: bold;
+        }
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            background: #1c1c1c;
+        }
+
+        th,
+        td {
+
+            padding: 16px;
+
+            border: 1px solid #333;
+
+            text-align: center;
+        }
+
+        th {
+
+            background: #222;
+
+            font-size: 18px;
+
+            position: sticky;
+
+            top: 0;
+        }
+
+        td {
+
+            font-size: 17px;
+        }
+
+        tr:nth-child(even) {
+
+            background: #181818;
+        }
+
+        tr:hover {
+
+            background: #252525;
+        }
+
+        .rank {
+
+            font-weight: bold;
+
+            font-size: 20px;
+        }
+
+        .first-place {
+
+            background: #332b00 !important;
+
+            font-weight: bold;
+        }
+
+        .second-place {
+
+            background: #252525 !important;
+        }
+
+        .third-place {
+
+            background: #2b2118 !important;
+        }
+
+        .team {
+
+            font-weight: bold;
+
+            font-size: 19px;
+        }
+
+        .total {
+
+            font-weight: bold;
+
+            font-size: 21px;
+        }
+
+        .loading {
+
+            text-align: center;
+
+            padding: 30px;
+        }
+
+        .error {
+
+            text-align: center;
+
+            padding: 30px;
+
+            color: #ff4444;
+        }
+
+        .last-update {
+
+            text-align: right;
+
+            color: #888;
+
+            font-size: 13px;
+
+            margin-top: 10px;
+        }
+
+        @media (max-width: 800px) {
+
+            body {
+
+                padding: 10px;
+            }
+
+            h1 {
+
+                font-size: 28px;
+            }
+
+            th,
+            td {
+
+                padding: 10px;
+
+                font-size: 13px;
+            }
+
+            .team {
+
+                font-size: 15px;
+            }
+
+            .total {
+
+                font-size: 17px;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <h1>🏆 ESPORTS SCOREBOARD</h1>
+
+    <div class="subtitle">
+        BGMI / PUBG Esports Tournament
+    </div>
+
+
+    <div class="top-bar">
+
+        <button
+            class="match-btn"
+            onclick="openMatchControl()">
+
+            🎮 Match Control
+
+        </button>
+
+    </div>
+
+
+    <div id="status" class="status">
+
+        LIVE ●
+
+    </div>
+
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>Rank</th>
+
+                <th>Team</th>
+
+                <th>Matches</th>
+
+                <th>WWCD</th>
+
+                <th>Placement Points</th>
+
+                <th>Eliminations</th>
+
+                <th>Total</th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody id="scoreboard">
+
+            <tr>
+
+                <td colspan="7" class="loading">
+
+                    Loading scoreboard...
+
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+
+    <div id="lastUpdate" class="last-update">
+
+        Last update: --
+
+    </div>
+
+
+    <script>
+
+
+        // ==========================================
+        // API
+        // ==========================================
+
+        const API_URL = "/api/teams";
+
+
+        // ==========================================
+        // OPEN MATCH CONTROL
+        // ==========================================
+
+        function openMatchControl() {
+
+            window.location.href = "/match.html";
+
+        }
+
+
+        // ==========================================
+        // LOAD SCOREBOARD
+        // ==========================================
+
+        async function loadScoreboard() {
+
+            try {
+
+                const response = await fetch(
+                    API_URL,
+                    {
+                        cache: "no-store"
+                    }
+                );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Server returned " +
+                        response.status
+                    );
+
+                }
+
+
+                let teams =
+                    await response.json();
+
+
+                // ==========================================
+                // SORT TEAMS
+                // ==========================================
+
+                teams.sort((a, b) => {
+
+
+                    // 1. TOTAL SCORE
+
+                    if (b.total !== a.total) {
+
+                        return b.total - a.total;
+
+                    }
+
+
+                    // 2. ELIMINATIONS
+
+                    if (
+                        b.eliminations !==
+                        a.eliminations
+                    ) {
+
+                        return (
+                            b.eliminations -
+                            a.eliminations
+                        );
+
+                    }
+
+
+                    // 3. WWCD
+
+                    if (b.wwcd !== a.wwcd) {
+
+                        return b.wwcd - a.wwcd;
+
+                    }
+
+
+                    // 4. PLACEMENT POINTS
+
+                    return (
+                        b.placementPoints -
+                        a.placementPoints
+                    );
+
+                });
+
+
+                displayScoreboard(teams);
+
+
+                document.getElementById(
+                    "status"
+                ).textContent = "LIVE ●";
+
+
+                document.getElementById(
+                    "status"
+                ).style.color = "#00ff88";
+
+
+                // ==========================================
+                // LAST UPDATE
+                // ==========================================
+
+                const now =
+                    new Date();
+
+
+                document.getElementById(
+                    "lastUpdate"
+                ).textContent =
+                    "Last update: " +
+                    now.toLocaleTimeString();
+
+            }
+
+
+            catch (error) {
+
+
+                console.error(
+                    "Scoreboard error:",
+                    error
+                );
+
+
+                document.getElementById(
+                    "scoreboard"
+                ).innerHTML = `
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="error">
+
+                            ❌ Unable to load scoreboard
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+
+                document.getElementById(
+                    "status"
+                ).textContent =
+                    "OFFLINE ●";
+
+
+                document.getElementById(
+                    "status"
+                ).style.color =
+                    "#ff4444";
+
+            }
+
+        }
+
+
+        // ==========================================
+        // DISPLAY SCOREBOARD
+        // ==========================================
+
+        function displayScoreboard(teams) {
+
+
+            const table =
+                document.getElementById(
+                    "scoreboard"
+                );
+
+
+            table.innerHTML = "";
+
+
+            if (teams.length === 0) {
+
+
+                table.innerHTML = `
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="loading">
+
+                            No teams available
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+
+                return;
+
+            }
+
+
+            teams.forEach(
+                (team, index) => {
+
+
+                    const row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    // ==========================================
+                    // RANK STYLING
+                    // ==========================================
+
+                    if (
+                        index === 0 &&
+                        team.total > 0
+                    ) {
+
+                        row.classList.add(
+                            "first-place"
+                        );
+
+                    }
+
+                    else if (
+                        index === 1 &&
+                        team.total > 0
+                    ) {
+
+                        row.classList.add(
+                            "second-place"
+                        );
+
+                    }
+
+                    else if (
+                        index === 2 &&
+                        team.total > 0
+                    ) {
+
+                        row.classList.add(
+                            "third-place"
+                        );
+
+                    }
+
+
+                    // ==========================================
+                    // RANK SYMBOL
+                    // ==========================================
+
+                    let rank =
+                        index + 1;
+
+
+                    if (
+                        index === 0 &&
+                        team.total > 0
+                    ) {
+
+                        rank = "🥇";
+
+                    }
+
+                    else if (
+                        index === 1 &&
+                        team.total > 0
+                    ) {
+
+                        rank = "🥈";
+
+                    }
+
+                    else if (
+                        index === 2 &&
+                        team.total > 0
+                    ) {
+
+                        rank = "🥉";
+
+                    }
+
+
+                    // ==========================================
+                    // CREATE ROW
+                    // ==========================================
+
+                    row.innerHTML = `
+
+                        <td class="rank">
+
+                            ${rank}
+
+                        </td>
+
+
+                        <td class="team">
+
+                            ${team.name}
+
+                        </td>
+
+
+                        <td>
+
+                            ${team.matches}
+
+                        </td>
+
+
+                        <td>
+
+                            ${team.wwcd}
+
+                        </td>
+
+
+                        <td>
+
+                            ${team.placementPoints}
+
+                        </td>
+
+
+                        <td>
+
+                            ${team.eliminations}
+
+                        </td>
+
+
+                        <td class="total">
+
+                            ${team.total}
+
+                        </td>
+
+                    `;
+
+
+                    table.appendChild(row);
+
+                }
+            );
+
+        }
+
+
+        // ==========================================
+        // INITIAL LOAD
+        // ==========================================
+
+        loadScoreboard();
+
+
+        // ==========================================
+        // AUTO REFRESH EVERY 2 SECONDS
+        // ==========================================
+
+        setInterval(
+            loadScoreboard,
+            2000
+        );
+
+
+    </script>
+
+
+</body>
+
+</html>
